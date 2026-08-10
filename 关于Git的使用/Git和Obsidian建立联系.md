@@ -42,8 +42,6 @@ Obsidian 的「仓库」其实就是电脑上的一个普通文件夹。
 点 **Create repository** 后，仓库就建好了。  
 网页上会看到提示命令——**先不用急着照抄**，按本文顺序做更不容易乱。
 
-![[Pasted image 20260805145722.png]]
-
 你会用到一个远程地址（二选一，推荐 SSH）：
 
 ```text
@@ -96,8 +94,6 @@ git init
 在当前文件夹创建一个隐藏的 `.git` 目录，表示「从现在开始，这个文件夹由 Git 管理」。
 
 成功时大致会看到：`Initialized empty Git repository...`
-
-![[Pasted image 20260805150328.png]]
 
 ---
 

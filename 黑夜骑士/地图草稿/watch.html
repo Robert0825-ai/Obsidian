@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>黑夜骑士 · 林区骨架 v2</title>
+  <style>
+    :root {
+      --bg: #0b001b;
+      --panel: #12141c;
+      --ink: #e8e6e3;
+      --muted: #9a968f;
+      --line: #2a2d38;
+      --forest: #243328;
+      --hub: #2f4a34;
+      --climb: #3d3424;
+      --loop: #1e2a28;
+      --elite: #3a3d45;
+      --camp: #3a3324;
+      --start: #c9a227;
+      --stub: #4a4550;
+      --stub-fill: #1a1822;
+      --door: #6e6a64;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 14px/1.45 "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { display: grid; grid-template-columns: 1fr 320px; }
+    #stage { position: relative; overflow: hidden; cursor: grab; background: var(--bg); }
+    #stage.drag { cursor: grabbing; }
+    svg { display: block; transform-origin: 0 0; }
+    .room { stroke: #0b001b; stroke-width: 2; cursor: pointer; }
+    .room.start { fill: #3a3420; }
+    .room.forest { fill: var(--forest); }
+    .room.hub { fill: var(--hub); }
+    .room.climb { fill: var(--climb); }
+    .room.loop { fill: var(--loop); }
+    .room.elite { fill: var(--elite); }
+    .room.camp { fill: var(--camp); }
+    .room.stub { fill: var(--stub-fill); stroke: var(--stub); stroke-dasharray: 4 3; }
+    .room:hover { filter: brightness(1.16); }
+    .room.sel { stroke: #cfc8b8; }
+    .label { fill: #cfc8b8; font-size: 11px; pointer-events: none; }
+    .dot { fill: var(--start); pointer-events: none; }
+    .door { stroke: var(--door); stroke-width: 4; }
+    aside { background: var(--panel); border-left: 1px solid var(--line); padding: 16px 18px; overflow: auto; }
+    h1 { font-size: 16px; font-weight: 650; margin: 0 0 6px; }
+    h2 { font-size: 13px; margin: 16px 0 6px; color: var(--ink); }
+    p, li { color: var(--muted); }
+    .kv { display: grid; grid-template-columns: 64px 1fr; gap: 4px 8px; margin: 12px 0; }
+    .kv b { color: var(--ink); font-weight: 600; }
+    .hint { font-size: 12px; }
+    kbd { font: 11px ui-monospace, Consolas, monospace; border: 1px solid var(--line); padding: 0 5px; color: var(--ink); }
+  </style>
+</head>
+<body>
+  <div id="stage"></div>
+  <aside>
+    <h1>林区骨架 v2</h1>
+    <p>按你那张的体量重排的一版：能认、有回路、门留好。不是终稿，给你改。</p>
+    <div class="kv" id="detail"><span>点选</span><b>点左边一个房间</b></div>
+    <h2>在 MetSys 里怎么上色</h2>
+    <p class="hint">左边模式点 <b style="color:var(--ink)">单元格颜色</b>。下面会出现色块，点它选颜色，再 <kbd>左键</kbd> 点房间。<kbd>右键</kbd> 清掉。<kbd>Shift+左键</kbd> 整间一起涂。这只改小地图颜色，不是房间里的地砖。</p>
+    <h2>藤蔓怎么放</h2>
+    <p class="hint"><b style="color:var(--ink)">小地图上：</b>模式改成 <b style="color:var(--ink)">单元格符号</b>，选一个图标点在「爬藤竖井」上，表示这里能爬。<br><b style="color:var(--ink)">游戏里真的藤：</b>要进那一间的 2D 场景里摆，不在这张格子图上画。这一刀先空壳，竖井先只在地图上做记号。</p>
+    <p class="hint">拖动画布 · 滚轮缩放 · 点房间看它为什么在这。</p>
+  </aside>
+  <script>
+    const CELL = 44;
+    const GAP = 6;
+    const STEP = CELL + GAP;
+    const ROOMS = [
+      { id: "spawn", name: "出生穴", x: 0, y: 6, w: 1, h: 1, kind: "start", why: "只有一扇东门。进来是安全的窄房间，玩家先学会走。" },
+      { id: "gate", name: "林门", x: 1, y: 6, w: 2, h: 1, kind: "forest", why: "出生到枢纽的过渡，不要一出门就是大厅。" },
+      { id: "well", name: "西井", x: 1, y: 7, w: 1, h: 1, kind: "forest", why: "往下接到篝火袋，回头路。" },
+      { id: "hub", name: "荆棘枢纽", x: 3, y: 5, w: 3, h: 3, kind: "hub", why: "这一区的脸。上下左右都有门，走一圈还能认回来。" },
+      { id: "climb", name: "爬藤竖井", x: 4, y: 2, w: 1, h: 3, kind: "climb", why: "地标。地图上放符号；真藤以后在场景里摆。" },
+      { id: "north", name: "北台", x: 3, y: 1, w: 3, h: 1, kind: "forest", why: "竖井上头的平台，北边留城堡门。" },
+      { id: "castle", name: "以后·城堡", x: 4, y: 0, w: 1, h: 1, kind: "stub", why: "现在不铺。门留在这。" },
+      { id: "grove", name: "枯树丛", x: 6, y: 4, w: 2, h: 2, kind: "forest", why: "枢纽右上的小岔路，可藏一点东西，不是主路。" },
+      { id: "east", name: "东路", x: 6, y: 6, w: 4, h: 1, kind: "forest", why: "通往墓园方向的主路，也是回路的上边。" },
+      { id: "chamber", name: "虫巢厅", x: 10, y: 5, w: 2, h: 3, kind: "elite", why: "这一区的小高潮。以后放精英或检查点。" },
+      { id: "cem", name: "以后·墓园", x: 12, y: 6, w: 1, h: 1, kind: "stub", why: "现在不铺。门留在这。" },
+      { id: "drop", name: "落穴", x: 8, y: 7, w: 1, h: 1, kind: "loop", why: "从东路掉到下廊，把路收成一圈。" },
+      { id: "south", name: "回路下廊", x: 3, y: 8, w: 6, h: 1, kind: "loop", why: "走一圈回到枢纽。类银河要能认路，不是一条直线走到头。" },
+      { id: "camp", name: "篝火袋", x: 1, y: 8, w: 1, h: 2, kind: "camp", why: "死胡同也有用：检查点。不是空走廊。" },
+    ];
+    const DOORS = [
+      ["spawn", "gate"], ["gate", "hub"], ["gate", "well"], ["well", "camp"],
+      ["hub", "climb"], ["climb", "north"], ["north", "castle"],
+      ["hub", "grove"], ["hub", "east"], ["east", "chamber"], ["chamber", "cem"],
+      ["hub", "south"], ["east", "drop"], ["drop", "south"], ["south", "camp"],
+    ];
+
+    const byId = Object.fromEntries(ROOMS.map((r) => [r.id, r]));
+    function px(n) { return GAP + n * STEP; }
+    function center(r) {
+      return { x: px(r.x) + (r.w * STEP - GAP) / 2, y: px(r.y) + (r.h * STEP - GAP) / 2 };
+    }
+
+    const maxX = Math.max(...ROOMS.map((r) => r.x + r.w));
+    const maxY = Math.max(...ROOMS.map((r) => r.y + r.h));
+    const W = px(maxX) + GAP;
+    const H = px(maxY) + GAP;
+    const stage = document.getElementById("stage");
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("width", W);
+    svg.setAttribute("height", H);
+    stage.appendChild(svg);
+
+    DOORS.forEach(([a, b]) => {
+      const A = center(byId[a]), B = center(byId[b]);
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("class", "door");
+      line.setAttribute("x1", A.x); line.setAttribute("y1", A.y);
+      line.setAttribute("x2", B.x); line.setAttribute("y2", B.y);
+      svg.appendChild(line);
+    });
+
+    let selected = null;
+    const shapes = new Map();
+    ROOMS.forEach((r) => {
+      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      rect.setAttribute("class", `room ${r.kind}`);
+      rect.setAttribute("x", px(r.x));
+      rect.setAttribute("y", px(r.y));
+      rect.setAttribute("width", r.w * STEP - GAP);
+      rect.setAttribute("height", r.h * STEP - GAP);
+      rect.setAttribute("rx", 4);
+      rect.addEventListener("click", (e) => { e.stopPropagation(); select(r); });
+      svg.appendChild(rect);
+      shapes.set(r.id, rect);
+      const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      t.setAttribute("class", "label");
+      t.setAttribute("x", px(r.x) + 6);
+      t.setAttribute("y", px(r.y) + 16);
+      t.textContent = r.name;
+      svg.appendChild(t);
+      if (r.kind === "start") {
+        const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        c.setAttribute("class", "dot");
+        c.setAttribute("cx", center(r).x);
+        c.setAttribute("cy", center(r).y + 6);
+        c.setAttribute("r", 5);
+        svg.appendChild(c);
+      }
+    });
+
+    function select(r) {
+      if (selected) shapes.get(selected.id).classList.remove("sel");
+      selected = r;
+      shapes.get(r.id).classList.add("sel");
+      document.getElementById("detail").innerHTML =
+        `<span>房间</span><b>${r.name}</b><span>格子</span><b>${r.w}×${r.h}</b><span>为什么</span><b>${r.why}</b>`;
+    }
+
+    const cam = { x: 0, y: 0, s: 1 };
+    let drag = null;
+    function applyCam() { svg.style.transform = `translate(${cam.x}px,${cam.y}px) scale(${cam.s})`; }
+    function fitMap() {
+      const rect = stage.getBoundingClientRect();
+      const s = Math.min((rect.width - 48) / W, (rect.height - 48) / H);
+      cam.s = Math.max(0.4, s);
+      cam.x = (rect.width - W * cam.s) / 2;
+      cam.y = (rect.height - H * cam.s) / 2;
+      applyCam();
+    }
+    fitMap();
+    window.addEventListener("resize", fitMap);
+    stage.addEventListener("pointerdown", (e) => {
+      if (e.target.closest(".room")) return;
+      drag = { x: e.clientX - cam.x, y: e.clientY - cam.y };
+      stage.classList.add("drag");
+      stage.setPointerCapture(e.pointerId);
+    });
+    stage.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      cam.x = e.clientX - drag.x; cam.y = e.clientY - drag.y; applyCam();
+    });
+    stage.addEventListener("pointerup", () => { drag = null; stage.classList.remove("drag"); });
+    stage.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const next = Math.min(2.4, Math.max(0.4, cam.s * (e.deltaY > 0 ? 0.9 : 1.1)));
+      const rect = stage.getBoundingClientRect();
+      const px0 = e.clientX - rect.left, py0 = e.clientY - rect.top;
+      const k = next / cam.s;
+      cam.x = px0 - (px0 - cam.x) * k;
+      cam.y = py0 - (py0 - cam.y) * k;
+      cam.s = next;
+      applyCam();
+    }, { passive: false });
+    select(byId.hub);
+  </script>
+</body>
+</html>

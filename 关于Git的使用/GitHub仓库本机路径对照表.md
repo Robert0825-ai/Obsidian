@@ -18,7 +18,10 @@
 | [Robert0825-ai/Robert0825-ai.github.io](https://github.com/Robert0825-ai/Robert0825-ai.github.io) | `C:\Users\yehai\Documents\newfiles\godot-2d` | 个人网站源码仓库（GitHub Pages） |
 | `Robert0825-ai/-` | （待补充） | 还不清楚本机在哪 |
 | [Robert0825-ai/gentle-butler](https://github.com/Robert0825-ai/gentle-butler)（[[温柔小管家]]） | `C:\Users\yehai\Projects\gentle-butler` | C# WPF；运行见该笔记 |
+| [Robert0825-ai/card-game](https://github.com/Robert0825-ai/card-game) | `C:\Users\yehai\Documents\card-game` | Godot 预告制卡牌对决。私人仓库。工程本来就在 Documents，没有搬到 Projects |
 | [comfyanonymous/ComfyUI](https://github.com/comfyanonymous/ComfyUI)（[[本机AI绘图环境-ComfyUI]]） | `C:\Users\yehai\Projects\ComfyUI` | 本地 AI 出图；官方仓库 clone，非我的 GitHub 账号 |
+| （无 GitHub）Hello Knight 参考拆包 | `C:\Users\yehai\Documents\Hello Knight` | 《空洞骑士》Unity 导出；笔记 [[Hello-Knight素材分布]]。**不能上架、不要 git** |
+| （已删）黑夜骑士 Demo | 原 `C:\Users\yehai\Projects\night-knight` | 2026-08-16 已删；文档仍在 Obsidian `黑夜骑士/` |
 
 ### 本机工具（不一定是我的 GitHub 仓库）
 
@@ -85,3 +88,8 @@ git clone git@github.com:你的用户名/仓库名.git
 - 新 clone / 新项目：默认放进 `C:\Users\yehai\Projects\`
 - 旧项目可以暂时留在原地，但路径要记在这张表里
 - 搬家前先确认没有未提交的重要改动；搬家后更新本表，并检查 Obsidian / Godot 是否还指向正确文件夹
+
+| see-through-webui (本地工具，非自有仓库) | `C:\Users\yehai\Projects\see-through-webui` | 二次元立绘拆层 WebUI；Downloads 已清理 |
+
+
+相关笔记：[[关于工具/Clash-Verge三套用法]]
